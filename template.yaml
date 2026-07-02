@@ -1,0 +1,22 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: CloudFormation template to create an S3 bucket
+
+Resources:
+  RocS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: roc-s3first-cloudformation
+      AccessControl: Private
+      VersioningConfiguration:
+        Status: Suspended
+      Tags:
+        - Key: Project
+          Value: roc-cFormation1-s3
+
+Outputs:
+  BucketName:
+    Description: Name of the S3 bucket
+    Value: !Ref RocS3Bucket
+  BucketArn:
+    Description: ARN of the S3 bucket
+    Value: !GetAtt RocS3Bucket.Arn
