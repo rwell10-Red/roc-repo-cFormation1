@@ -4,10 +4,16 @@ on:
   push:
     branches:
       - main
+      - dev
+      - stage
+      - uat
 
 permissions:
   id-token: write
   contents: read
+
+env:
+  ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'prod' || github.ref == 'refs/heads/dev' && 'dev' || github.ref == 'refs/heads/stage' && 'stage' || github.ref == 'refs/heads/uat' && 'uat' }}
 
 jobs:
   test:
@@ -24,7 +30,7 @@ jobs:
         run: npm test
 
   deploy:
-    name: Deploy
+    name: Deploy (${{ github.ref == 'refs/heads/main' && 'prod' || github.ref == 'refs/heads/dev' && 'dev' || github.ref == 'refs/heads/stage' && 'stage' || github.ref == 'refs/heads/uat' && 'uat' }})
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -46,11 +52,12 @@ jobs:
         run: |
           aws cloudformation deploy \
             --template-file infra/stack.yaml \
-            --stack-name roc-cFormation1-s3 \
+            --stack-name ${{ env.ENVIRONMENT }}-roc-cFormation1-s3 \
             --region us-east-1 \
+            --parameter-overrides Environment=${{ env.ENVIRONMENT }} \
             --no-fail-on-empty-changeset
 
       - name: Verify S3 bucket exists
         run: |
-          aws s3api head-bucket --bucket roc-s3first-cloudformation
-          echo "Bucket roc-s3first-cloudformation verified."
+          aws s3api head-bucket --bucket ${{ env.ENVIRONMENT }}-s3-roc-s3first-cloudformation
+          echo "Bucket ${{ env.ENVIRONMENT }}-s3-roc-s3first-cloudformation verified."

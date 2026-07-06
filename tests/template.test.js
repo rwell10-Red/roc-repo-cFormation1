@@ -27,8 +27,13 @@ describe('CloudFormation Template', () => {
     expect(props.AccessControl).toBe('Private');
   });
 
-  test('bucket has correct name', () => {
+  test('bucket name uses environment prefix', () => {
     const props = template.Resources.RocS3Bucket.Properties;
-    expect(props.BucketName).toBe('roc-s3first-cloudformation');
+    expect(props.BucketName['Fn::Sub']).toBe('${Environment}-s3-roc-s3first-cloudformation');
+  });
+
+  test('has Environment parameter', () => {
+    expect(template.Parameters.Environment).toBeDefined();
+    expect(template.Parameters.Environment.AllowedValues).toEqual(['dev', 'stage', 'uat', 'prod']);
   });
 });
