@@ -40,12 +40,12 @@ jobs:
       - name: Validate CloudFormation template
         run: |
           aws cloudformation validate-template \
-            --template-body file://template.yaml
+            --template-body file://infra/stack.yaml
 
       - name: Deploy CloudFormation stack
         run: |
           aws cloudformation deploy \
-            --template-file template.yaml \
+            --template-file infra/stack.yaml \
             --stack-name roc-cFormation1-s3 \
             --region us-east-1 \
             --no-fail-on-empty-changeset

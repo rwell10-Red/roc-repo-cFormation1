@@ -9,7 +9,7 @@ const cfnSchema = yaml.DEFAULT_SCHEMA.extend([
   new yaml.Type('!Sub', { kind: 'scalar', construct: data => ({ 'Fn::Sub': data }) }),
 ]);
 
-const templatePath = path.join(__dirname, '..', 'template.yaml');
+const templatePath = path.join(__dirname, '..', 'infra', 'stack.yaml');
 const template = yaml.load(fs.readFileSync(templatePath, 'utf8'), { schema: cfnSchema });
 
 describe('CloudFormation Template', () => {
