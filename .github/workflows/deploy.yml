@@ -10,10 +10,23 @@ permissions:
   contents: read
 
 jobs:
-  deploy:
-    name: Deploy CloudFormation Stack
+  test:
+    name: Test
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+
+  deploy:
+    name: Deploy
+    needs: test
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -34,9 +47,10 @@ jobs:
           aws cloudformation deploy \
             --template-file template.yaml \
             --stack-name roc-cFormation1-s3 \
-            --region us-east-1
+            --region us-east-1 \
+            --no-fail-on-empty-changeset
 
       - name: Verify S3 bucket exists
         run: |
           aws s3api head-bucket --bucket roc-s3first-cloudformation
-          echo "Bucket roc-s3first-cloudformation successfully created."
+          echo "Bucket roc-s3first-cloudformation verified."
