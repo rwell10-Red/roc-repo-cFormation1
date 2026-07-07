@@ -3,10 +3,16 @@ name: Deploy S3 Bucket via CloudFormation
 on:
   push:
     branches:
-      - main
       - dev
       - stage
       - uat
+      - main
+  pull_request:
+    types: [closed]
+    branches:
+      - stage
+      - uat
+      - main
 
 permissions:
   id-token: write
@@ -15,6 +21,7 @@ permissions:
 jobs:
   test:
     name: Test
+    if: github.event_name == 'push' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -29,8 +36,9 @@ jobs:
   deploy:
     name: Deploy
     needs: test
+    if: github.event_name == 'push' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || github.ref == 'refs/heads/dev' && 'dev' || github.ref == 'refs/heads/stage' && 'stage' || 'uat' }}
+    environment: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' && 'prod' || github.ref == 'refs/heads/dev' && 'dev' || github.ref == 'refs/heads/stage' && 'stage' || 'uat') || github.base_ref == 'main' && 'prod' || github.base_ref == 'stage' && 'stage' || github.base_ref == 'uat' && 'uat' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
