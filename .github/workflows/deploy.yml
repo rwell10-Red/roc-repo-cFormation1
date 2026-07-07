@@ -57,7 +57,7 @@ jobs:
         run: |
           aws cloudformation deploy \
             --template-file infra/stack.yaml \
-            --stack-name ${{ vars.ENVIRONMENT }}-roc-cFormation1-s3 \
+            --stack-name ${{ vars.ENVIRONMENT }}-${{ vars.STACK_NAME }} \
             --region ${{ vars.AWS_REGION }} \
             --parameter-overrides Environment=${{ vars.ENVIRONMENT }} \
             --no-fail-on-empty-changeset
