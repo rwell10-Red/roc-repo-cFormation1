@@ -64,5 +64,6 @@ jobs:
 
       - name: Verify S3 bucket exists
         run: |
-          aws s3api head-bucket --bucket ${{ vars.ENVIRONMENT }}-s3-roc-s3first-cloudformation
-          echo "Bucket ${{ vars.ENVIRONMENT }}-s3-roc-s3first-cloudformation verified."
+          aws s3api head-bucket --bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }}
+          echo "Bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }} verified."
+
