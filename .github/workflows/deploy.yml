@@ -10,7 +10,6 @@ on:
   pull_request:
     types: [closed]
     branches:
-      - stage
       - uat
       - main
 
@@ -47,7 +46,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.ROC_AROLE_CFORMATION_S3 }}
-          aws-region: us-east-1
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Validate CloudFormation template
         run: |
@@ -59,7 +58,7 @@ jobs:
           aws cloudformation deploy \
             --template-file infra/stack.yaml \
             --stack-name ${{ vars.ENVIRONMENT }}-roc-cFormation1-s3 \
-            --region us-east-1 \
+            --region ${{ vars.AWS_REGION }} \
             --parameter-overrides Environment=${{ vars.ENVIRONMENT }} \
             --no-fail-on-empty-changeset
 
