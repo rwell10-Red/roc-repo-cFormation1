@@ -51,7 +51,13 @@ jobs:
           aws cloudformation validate-template \
             --template-body file://infra/stack.yaml
 
+      - name: Check if template changed
+        id: changes
+        run: |
+          git diff --name-only HEAD~1 HEAD | grep -q "infra/stack.yaml" && echo "changed=true" >> $GITHUB_OUTPUT || echo "changed=false" >> $GITHUB_OUTPUT
+
       - name: Deploy CloudFormation stack
+        if: steps.changes.outputs.changed == 'true'
         run: |
           aws cloudformation deploy \
             --template-file infra/stack.yaml \
@@ -61,6 +67,7 @@ jobs:
             --no-fail-on-empty-changeset
 
       - name: Verify S3 bucket exists
+        if: steps.changes.outputs.changed == 'true'
         run: |
           aws s3api head-bucket --bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }}
           echo "Bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }} verified."
