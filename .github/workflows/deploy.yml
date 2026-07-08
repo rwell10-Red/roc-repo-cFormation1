@@ -7,8 +7,9 @@ on:
   pull_request:
     types: [closed]
     branches:
+      - stage
       - uat
-      - main
+      - prod
 
 permissions:
   id-token: write
@@ -34,7 +35,7 @@ jobs:
     needs: test
     if: github.event_name == 'push' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-    environment: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' && 'prod' || github.ref == 'refs/heads/dev' && 'dev' || github.ref == 'refs/heads/stage' && 'stage' || 'uat') || github.base_ref == 'main' && 'prod' || github.base_ref == 'stage' && 'stage' || github.base_ref == 'uat' && 'uat' }}
+    environment: ${{ github.event_name == 'push' && 'dev' || github.base_ref == 'prod' && 'prod' || github.base_ref == 'stage' && 'stage' || github.base_ref == 'uat' && 'uat' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
