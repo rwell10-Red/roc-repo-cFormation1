@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - dev
-      - stage
-      - uat
-      - main
   pull_request:
     types: [closed]
     branches:
