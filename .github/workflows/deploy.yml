@@ -10,7 +10,6 @@ on:
   pull_request:
     types: [closed]
     branches:
-      - stage
       - uat
       - main
 
@@ -47,7 +46,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.ROC_AROLE_CFORMATION_S3 }}
-          aws-region: us-east-1
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Validate CloudFormation template
         run: |
@@ -58,12 +57,13 @@ jobs:
         run: |
           aws cloudformation deploy \
             --template-file infra/stack.yaml \
-            --stack-name ${{ vars.ENVIRONMENT }}-roc-cFormation1-s3 \
-            --region us-east-1 \
+            --stack-name ${{ vars.ENVIRONMENT }}-${{ vars.STACK_NAME }} \
+            --region ${{ vars.AWS_REGION }} \
             --parameter-overrides Environment=${{ vars.ENVIRONMENT }} \
             --no-fail-on-empty-changeset
 
       - name: Verify S3 bucket exists
         run: |
-          aws s3api head-bucket --bucket ${{ vars.ENVIRONMENT }}-s3-roc-s3first-cloudformation
-          echo "Bucket ${{ vars.ENVIRONMENT }}-s3-roc-s3first-cloudformation verified."
+          aws s3api head-bucket --bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }}
+          echo "Bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }} verified."
+
