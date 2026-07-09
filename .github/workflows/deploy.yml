@@ -26,14 +26,20 @@ jobs:
       - name: Detect Target Environment
         id: detect
         run: |
+          SOURCE="${{ github.event.pull_request.head.ref }}"
+          TARGET="${{ github.event.pull_request.base.ref }}"
+
           if [[ "${GITHUB_REF_NAME}" == "dev" ]]; then
             echo "environment=dev" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event.pull_request.base.ref }}" == "stage" ]]; then
+          elif [[ "$SOURCE" == "dev" && "$TARGET" == "stage" ]]; then
             echo "environment=stage" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event.pull_request.base.ref }}" == "uat" ]]; then
+          elif [[ "$SOURCE" == "stage" && "$TARGET" == "uat" ]]; then
             echo "environment=uat" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event.pull_request.base.ref }}" == "prod" ]]; then
+          elif [[ "$SOURCE" == "uat" && "$TARGET" == "prod" ]]; then
             echo "environment=prod" >> $GITHUB_OUTPUT
+          else
+            echo "Invalid promotion path: $SOURCE → $TARGET"
+            exit 1
           fi
 
   build:
