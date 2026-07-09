@@ -96,17 +96,3 @@ jobs:
         run: |
           aws s3api head-bucket --bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }}
           echo "Bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }} verified."
-
-      - name: Promote to next environment
-        run: |
-          if [[ "${{ vars.ENVIRONMENT }}" == "dev" ]]; then
-            gh pr create --base stage --head dev --title "Promote dev to stage" --body "Auto-promotion after successful dev deploy" || true
-            gh pr merge --auto --merge
-          elif [[ "${{ vars.ENVIRONMENT }}" == "stage" ]]; then
-            gh pr create --base uat --head stage --title "Promote stage to uat" --body "Auto-promotion after successful stage deploy" || true
-            gh pr merge --auto --merge
-          elif [[ "${{ vars.ENVIRONMENT }}" == "uat" ]]; then
-            gh pr create --base prod --head uat --title "Promote uat to prod" --body "Auto-promotion after successful uat deploy"
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
