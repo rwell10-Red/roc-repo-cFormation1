@@ -1,24 +1,28 @@
-name: Deploy S3 Bucket via CloudFormation
+name: Dev-Build-Test-Deploy S3 Bucket via CloudFormation
 
 on:
   push:
     branches:
       - dev
-  pull_request:
-    types: [closed]
-    branches:
-      - stage
-      - uat
-      - prod
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+
   test:
     name: Test
-    if: github.event_name == 'push' || github.event.pull_request.merged == true
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -30,12 +34,11 @@ jobs:
       - name: Run tests
         run: npm test
 
-  deploy:
-    name: Deploy
+  deploy-dev:
+    name: Deploy (dev)
     needs: test
-    if: github.event_name == 'push' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-    environment: ${{ github.event_name == 'push' && 'dev' || github.base_ref == 'prod' && 'prod' || github.base_ref == 'stage' && 'stage' || github.base_ref == 'uat' && 'uat' }}
+    environment: dev
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -46,18 +49,7 @@ jobs:
           role-to-assume: ${{ secrets.ROC_AROLE_CFORMATION_S3 }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Validate CloudFormation template
-        run: |
-          aws cloudformation validate-template \
-            --template-body file://infra/stack.yaml
-
-      - name: Check if template changed
-        id: changes
-        run: |
-          git diff --name-only HEAD~1 HEAD | grep -q "infra/stack.yaml" && echo "changed=true" >> $GITHUB_OUTPUT || echo "changed=false" >> $GITHUB_OUTPUT
-
       - name: Deploy CloudFormation stack
-        if: steps.changes.outputs.changed == 'true'
         run: |
           aws cloudformation deploy \
             --template-file infra/stack.yaml \
@@ -67,8 +59,93 @@ jobs:
             --no-fail-on-empty-changeset
 
       - name: Verify S3 bucket exists
-        if: steps.changes.outputs.changed == 'true'
         run: |
           aws s3api head-bucket --bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }}
           echo "Bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }} verified."
 
+  deploy-stage:
+    name: Deploy (stage)
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    environment: stage
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.ROC_AROLE_CFORMATION_S3 }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Deploy CloudFormation stack
+        run: |
+          aws cloudformation deploy \
+            --template-file infra/stack.yaml \
+            --stack-name ${{ vars.ENVIRONMENT }}-${{ vars.STACK_NAME }} \
+            --region ${{ vars.AWS_REGION }} \
+            --parameter-overrides Environment=${{ vars.ENVIRONMENT }} \
+            --no-fail-on-empty-changeset
+
+      - name: Verify S3 bucket exists
+        run: |
+          aws s3api head-bucket --bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }}
+          echo "Bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }} verified."
+
+  deploy-uat:
+    name: Deploy (uat)
+    needs: deploy-stage
+    runs-on: ubuntu-latest
+    environment: uat
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.ROC_AROLE_CFORMATION_S3 }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Deploy CloudFormation stack
+        run: |
+          aws cloudformation deploy \
+            --template-file infra/stack.yaml \
+            --stack-name ${{ vars.ENVIRONMENT }}-${{ vars.STACK_NAME }} \
+            --region ${{ vars.AWS_REGION }} \
+            --parameter-overrides Environment=${{ vars.ENVIRONMENT }} \
+            --no-fail-on-empty-changeset
+
+      - name: Verify S3 bucket exists
+        run: |
+          aws s3api head-bucket --bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }}
+          echo "Bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }} verified."
+
+  deploy-prod:
+    name: Deploy (prod)
+    needs: deploy-uat
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.ROC_AROLE_CFORMATION_S3 }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Deploy CloudFormation stack
+        run: |
+          aws cloudformation deploy \
+            --template-file infra/stack.yaml \
+            --stack-name ${{ vars.ENVIRONMENT }}-${{ vars.STACK_NAME }} \
+            --region ${{ vars.AWS_REGION }} \
+            --parameter-overrides Environment=${{ vars.ENVIRONMENT }} \
+            --no-fail-on-empty-changeset
+
+      - name: Verify S3 bucket exists
+        run: |
+          aws s3api head-bucket --bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }}
+          echo "Bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }} verified."
