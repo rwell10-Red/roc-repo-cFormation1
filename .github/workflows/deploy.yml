@@ -83,6 +83,10 @@ jobs:
           role-to-assume: ${{ secrets.ROC_AROLE_CFORMATION_S3 }}
           aws-region: ${{ vars.AWS_REGION }}
 
+      - name: Get AWS Account ID
+        id: account
+        run: echo "id=$(aws sts get-caller-identity --query Account --output text)" >> $GITHUB_OUTPUT
+
       - name: Deploy CloudFormation stack
         run: |
           aws cloudformation deploy \
@@ -94,5 +98,5 @@ jobs:
 
       - name: Verify S3 bucket exists
         run: |
-          aws s3api head-bucket --bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }}
-          echo "Bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }} verified."
+          aws s3api head-bucket --bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }}-${{ steps.account.outputs.id }}
+          echo "Bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }}-${{ steps.account.outputs.id }} verified."
