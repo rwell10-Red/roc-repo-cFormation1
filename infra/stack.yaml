@@ -15,7 +15,7 @@ Resources:
   RocS3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "${Environment}-s3-roc-s3first-cloudformation"
+      BucketName: !Sub "${Environment}-s3-roc-s3first-cloudformation-${AWS::AccountId}"
       AccessControl: Private
       VersioningConfiguration:
         Status: Suspended

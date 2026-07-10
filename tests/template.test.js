@@ -27,9 +27,9 @@ describe('CloudFormation Template', () => {
     expect(props.AccessControl).toBe('Private');
   });
 
-  test('bucket name uses environment prefix', () => {
+  test('bucket name uses environment prefix and account ID', () => {
     const props = template.Resources.RocS3Bucket.Properties;
-    expect(props.BucketName['Fn::Sub']).toBe('${Environment}-s3-roc-s3first-cloudformation');
+    expect(props.BucketName['Fn::Sub']).toBe('${Environment}-s3-roc-s3first-cloudformation-${AWS::AccountId}');
   });
 
   test('has Environment parameter', () => {
