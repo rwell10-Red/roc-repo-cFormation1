@@ -68,6 +68,11 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Lint CloudFormation template
+        run: |
+          pip install cfn-lint
+          cfn-lint infra/stack.yaml
+
   deploy:
     name: Deploy (${{ needs.detect-environment.outputs.environment }})
     needs: [detect-environment, test]
@@ -88,6 +93,7 @@ jobs:
         run: echo "id=$(aws sts get-caller-identity --query Account --output text)" >> $GITHUB_OUTPUT
 
       - name: Deploy CloudFormation stack
+        id: deploy
         run: |
           aws cloudformation deploy \
             --template-file infra/stack.yaml \
@@ -95,6 +101,40 @@ jobs:
             --region ${{ vars.AWS_REGION }} \
             --parameter-overrides Environment=${{ vars.ENVIRONMENT }} \
             --no-fail-on-empty-changeset
+
+      - name: Verify rollback on failure
+        if: failure() && steps.deploy.outcome == 'failure'
+        run: |
+          echo "Deploy failed — verifying rollback..."
+
+          STACK_STATUS=$(aws cloudformation describe-stacks \
+            --stack-name ${{ vars.ENVIRONMENT }}-${{ vars.STACK_NAME }} \
+            --query "Stacks[0].StackStatus" \
+            --output text 2>/dev/null || echo "STACK_NOT_FOUND")
+
+          echo "Stack status: $STACK_STATUS"
+
+          if [[ "$STACK_STATUS" == "UPDATE_ROLLBACK_COMPLETE" ]]; then
+            echo "Rollback succeeded — stack is back to previous state"
+            aws s3api head-bucket \
+              --bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }}-${{ steps.account.outputs.id }}
+            echo "Bucket still accessible after rollback"
+
+          elif [[ "$STACK_STATUS" == "ROLLBACK_COMPLETE" ]]; then
+            echo "New stack creation failed — stack rolled back and is empty"
+            echo "No resources exist. Stack needs manual deletion before retry."
+
+          elif [[ "$STACK_STATUS" == "UPDATE_ROLLBACK_FAILED" ]]; then
+            echo "CRITICAL: Rollback itself failed — manual intervention required"
+            exit 1
+
+          elif [[ "$STACK_STATUS" == "STACK_NOT_FOUND" ]]; then
+            echo "Stack does not exist — nothing to verify"
+
+          else
+            echo "Unexpected status: $STACK_STATUS — investigate manually"
+            exit 1
+          fi
 
       - name: Verify S3 bucket exists
         run: |
