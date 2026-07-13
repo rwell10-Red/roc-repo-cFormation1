@@ -16,7 +16,11 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub "${Environment}-s3-roc-s3first-cloudformation-${AWS::AccountId}"
-      AccessControl: Private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
       VersioningConfiguration:
         Status: Suspended
       Tags:

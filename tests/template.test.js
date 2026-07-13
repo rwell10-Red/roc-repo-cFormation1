@@ -22,9 +22,13 @@ describe('CloudFormation Template', () => {
     expect(template.Resources.RocS3Bucket.Type).toBe('AWS::S3::Bucket');
   });
 
-  test('bucket is private', () => {
+  test('bucket blocks all public access', () => {
     const props = template.Resources.RocS3Bucket.Properties;
-    expect(props.AccessControl).toBe('Private');
+    const publicBlock = props.PublicAccessBlockConfiguration;
+    expect(publicBlock.BlockPublicAcls).toBe(true);
+    expect(publicBlock.BlockPublicPolicy).toBe(true);
+    expect(publicBlock.IgnorePublicAcls).toBe(true);
+    expect(publicBlock.RestrictPublicBuckets).toBe(true);
   });
 
   test('bucket name uses environment prefix and account ID', () => {
