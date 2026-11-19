@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: CloudFormation template to create an S3 bucket
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues:
+      - dev
+      - stage
+      - uat
+      - prod
+    Description: The deployment environment
+
+Resources:
+  RocS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${Environment}-s3-roc-s3first-cloudformation"
+      AccessControl: Private
+      VersioningConfiguration:
+        Status: Suspended
+      Tags:
+        - Key: Project
+          Value: roc-cFormation1-s3
+        - Key: Environment
+          Value: !Ref Environment
+
+Outputs:
+  BucketName:
+    Description: Name of the S3 bucket
+    Value: !Ref RocS3Bucket
+  BucketArn:
+    Description: ARN of the S3 bucket
+    Value: !GetAtt RocS3Bucket.Arn
+  Environment:
+    Description: Deployment environment
+    Value: !Ref Environment

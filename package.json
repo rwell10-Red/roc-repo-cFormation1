@@ -1,0 +1,12 @@
+{
+  "name": "roc-repo-cformation1",
+  "version": "1.0.0",
+  "description": "CloudFormation S3 bucket deployment",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "js-yaml": "^4.1.0"
+  }
+}

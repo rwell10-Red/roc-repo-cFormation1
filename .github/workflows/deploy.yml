@@ -1,0 +1,66 @@
+name: Deploy S3 Bucket via CloudFormation
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    types: [closed]
+    branches:
+      - uat
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    if: github.event_name == 'push' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+
+  deploy:
+    name: Deploy
+    needs: test
+    if: github.event_name == 'push' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' && 'prod' || github.ref == 'refs/heads/dev' && 'dev' || github.ref == 'refs/heads/stage' && 'stage' || 'uat') || github.base_ref == 'main' && 'prod' || github.base_ref == 'stage' && 'stage' || github.base_ref == 'uat' && 'uat' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.ROC_AROLE_CFORMATION_S3 }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Validate CloudFormation template
+        run: |
+          aws cloudformation validate-template \
+            --template-body file://infra/stack.yaml
+
+      - name: Deploy CloudFormation stack
+        run: |
+          aws cloudformation deploy \
+            --template-file infra/stack.yaml \
+            --stack-name ${{ vars.ENVIRONMENT }}-${{ vars.STACK_NAME }} \
+            --region ${{ vars.AWS_REGION }} \
+            --parameter-overrides Environment=${{ vars.ENVIRONMENT }} \
+            --no-fail-on-empty-changeset
+
+      - name: Verify S3 bucket exists
+        run: |
+          aws s3api head-bucket --bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }}
+          echo "Bucket ${{ vars.ENVIRONMENT }}-s3-${{ vars.BUCKET_NAME }} verified."
+
